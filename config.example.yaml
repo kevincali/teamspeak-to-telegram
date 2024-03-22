@@ -1,3 +1,15 @@
-botToken:
-chatId:
-messageId:
+intervalSeconds: 60
+teamSpeak:
+    favoriteUsers:
+        - foo
+        - bar
+    address: ts.example.com:port
+    serverquery:
+        username: foobar
+        password: hunter2
+telegram:
+    botToken: myBotToken
+    chatId: -999
+    messageId: 808
+    separator: " | "
+    zeroUsers: 🙅
