@@ -1,15 +1,15 @@
 intervalSeconds: 60
 teamSpeak:
-    favoriteUsers:
-        - foo
-        - bar
-    address: ts.example.com:port
+    favoriteUsers: # Filters for specific users. Leave it empty to match all.
+        # - foo
+        # - bar
+    address: # ts.example.com:10011
     serverquery:
-        username: foobar
-        password: hunter2
+        username: # foobar
+        password: # hunter2
 telegram:
-    botToken: myBotToken
-    chatId: -999
-    messageId: 808
+    botToken: # myBotToken
+    chatId: # -999
+    messageId: # 808
     separator: " | "
     zeroUsers: 🙅

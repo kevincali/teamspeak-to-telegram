@@ -4,34 +4,35 @@ import (
 	"log"
 	"os"
 
+	"github.com/go-playground/validator/v10"
 	"gopkg.in/yaml.v3"
 )
 
 const configFile = "config.yaml"
 
 type Config struct {
-	IntervalSeconds int       `yaml:"intervalSeconds"`
+	IntervalSeconds int       `yaml:"intervalSeconds" validate:"required"`
 	TeamSpeak       TeamSpeak `yaml:"teamSpeak"`
 	Telegram        Telegram  `yaml:"telegram"`
 }
 
 type TeamSpeak struct {
 	FavoriteUsers []string    `yaml:"favoriteUsers"`
-	Address       string      `yaml:"address"`
-	ServerQuery   ServerQuery `yaml:"serverQuery"`
+	Address       string      `yaml:"address" validate:"required"`
+	ServerQuery   ServerQuery `yaml:"serverquery"`
 }
 
 type ServerQuery struct {
-	Username string `yaml:"username"`
-	Password string `yaml:"password"`
+	Username string `yaml:"username" validate:"required"`
+	Password string `yaml:"password" validate:"required"`
 }
 
 type Telegram struct {
-	BotToken  string `yaml:"botToken"`
-	ChatId    int64  `yaml:"chatId"`
-	MessageId int    `yaml:"messageId"`
-	Separator string `yaml:"separator"`
-	ZeroUsers string `yaml:"zeroUsers"`
+	BotToken  string `yaml:"botToken" validate:"required"`
+	ChatId    int64  `yaml:"chatId" validate:"required"`
+	MessageId int    `yaml:"messageId" validate:"required"`
+	Separator string `yaml:"separator" validate:"required"`
+	ZeroUsers string `yaml:"zeroUsers" validate:"required"`
 }
 
 // loadConfig reads the config file
@@ -48,4 +49,13 @@ func loadConfig() Config {
 	}
 
 	return config
+}
+
+func (config *Config) validate() {
+	validate := validator.New()
+	if err := validate.Struct(config); err != nil {
+		validationErrors := err.(validator.ValidationErrors)
+
+		log.Fatalf("missing values in %s\n%s", configFile, validationErrors)
+	}
 }

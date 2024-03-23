@@ -4,6 +4,7 @@ import "time"
 
 func main() {
 	config := loadConfig()
+	config.validate()
 
 	telegramBot := config.Telegram.newTelegramBot()
 	config.initMessage(telegramBot)
