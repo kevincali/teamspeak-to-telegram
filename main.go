@@ -1,13 +1,21 @@
 package main
 
-import "time"
+import (
+	"log"
+	"os"
+	"time"
+)
 
 func main() {
-	config := loadConfig()
+	configPath := os.Getenv("CONFIG_PATH")
+	if configPath == "" {
+		log.Fatal("please specify a CONFIG_PATH envvar")
+	}
+	config := loadConfig(configPath)
 	config.validate()
 
 	telegramBot := config.Telegram.newTelegramBot()
-	config.initMessage(telegramBot)
+	config.initMessage(telegramBot, configPath)
 
 	teamspeakConn := config.TeamSpeak.newTeamSpeakConn()
 

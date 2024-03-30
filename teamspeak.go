@@ -19,17 +19,17 @@ func (tsConfig *TeamSpeak) newTeamSpeakConn() *telnet.Conn {
 	}
 
 	// skip until banner end is reached
-	err = conn.SkipUntil("command.")
-	if err != nil {
+	if err = conn.SkipUntil("command."); err != nil {
 		log.Fatal(err)
 	}
 
-	conn.Write([]byte(fmt.Sprintf("login %s %s\n", tsConfig.ServerQuery.Username, tsConfig.ServerQuery.Password)))
-	conn.Write([]byte("use 3\n"))
+	conn.Write([]byte(fmt.Sprintf("login %s %s\n", tsConfig.Username, tsConfig.Password)))
+	if err = conn.SkipUntil("msg=ok"); err != nil {
+		log.Fatal(err)
+	}
 
-	// skip first message
-	err = conn.SkipUntil("msg=ok")
-	if err != nil {
+	conn.Write([]byte(fmt.Sprintf("use %s\n", tsConfig.VirtualServerId)))
+	if err = conn.SkipUntil("msg=ok"); err != nil {
 		log.Fatal(err)
 	}
 
@@ -41,7 +41,7 @@ func (tsConfig *TeamSpeak) newTeamSpeakConn() *telnet.Conn {
 func (tsConfig *TeamSpeak) getOnlineUsers(conn *telnet.Conn) []string {
 	// login, select server and return clientlist
 	conn.Write([]byte("clientlist\n"))
-	time.Sleep(1000 * time.Millisecond)
+	time.Sleep(1 * time.Second)
 
 	// get clientlist
 	result, err := conn.ReadUntil("msg=ok")
@@ -54,18 +54,19 @@ func (tsConfig *TeamSpeak) getOnlineUsers(conn *telnet.Conn) []string {
 	clients := strings.Split(string(result), "|")
 	var users []string
 	for _, client := range clients {
-		username := strings.Fields(client)[3]
-		username = strings.Split(username, "=")[1]
+		fields := strings.Fields(client)
+
+		if clientType := strings.Split(fields[4], "=")[1]; clientType != "0" {
+			continue
+		}
+
+		username := strings.Split(fields[3], "=")[1]
 		username = strings.ReplaceAll(username, "\\s", " ")
 
 		if len(tsConfig.FavoriteUsers) != 0 {
 			if slices.Contains(tsConfig.FavoriteUsers, username) {
 				users = append(users, username)
 			}
-			continue
-		}
-		// skip serverquery client
-		if username == "Unknown" {
 			continue
 		}
 		users = append(users, username)

@@ -23,10 +23,10 @@ func (tgConfig *Telegram) newTelegramBot() *tgbotapi.BotAPI {
 
 // initMessage sets a messageId in the config it it's not yet present
 // it does so by sending a message to the chat and pinning it afterwards
-func (config *Config) initMessage(bot *tgbotapi.BotAPI) {
+func (config *Config) initMessage(bot *tgbotapi.BotAPI, configPath string) {
 	// check if we already have a messageId specified
 	if config.Telegram.MessageId == 0 {
-		log.Printf("no messageId specified in %s", configFile)
+		log.Printf("no messageId specified in config")
 
 		// send message
 		initChattable := tgbotapi.NewMessage(config.Telegram.ChatId, "init")
@@ -42,8 +42,8 @@ func (config *Config) initMessage(bot *tgbotapi.BotAPI) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		os.WriteFile(configFile, yamlData, 0644)
-		log.Printf("[Telegram]\t saved messageId to %s", configFile)
+		os.WriteFile(configPath, yamlData, 0644)
+		log.Println("[Telegram]\t saved messageId to config")
 
 		// pin message
 		pinConfig := tgbotapi.PinChatMessageConfig{

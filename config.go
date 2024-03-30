@@ -8,8 +8,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const configFile = "config.yaml"
-
 type Config struct {
 	IntervalSeconds int       `yaml:"intervalSeconds" validate:"required"`
 	TeamSpeak       TeamSpeak `yaml:"teamSpeak"`
@@ -17,14 +15,11 @@ type Config struct {
 }
 
 type TeamSpeak struct {
-	FavoriteUsers []string    `yaml:"favoriteUsers"`
-	Address       string      `yaml:"address" validate:"required"`
-	ServerQuery   ServerQuery `yaml:"serverquery"`
-}
-
-type ServerQuery struct {
-	Username string `yaml:"username" validate:"required"`
-	Password string `yaml:"password" validate:"required"`
+	FavoriteUsers   []string `yaml:"favoriteUsers"`
+	Address         string   `yaml:"address" validate:"required"`
+	Username        string   `yaml:"username" validate:"required"`
+	Password        string   `yaml:"password" validate:"required"`
+	VirtualServerId string   `yaml:"virtualServerId" validate:"required"`
 }
 
 type Telegram struct {
@@ -36,8 +31,8 @@ type Telegram struct {
 }
 
 // loadConfig reads the config file
-func loadConfig() Config {
-	file, err := os.ReadFile(configFile)
+func loadConfig(configPath string) Config {
+	file, err := os.ReadFile(configPath)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -56,6 +51,6 @@ func (config *Config) validate() {
 	if err := validate.Struct(config); err != nil {
 		validationErrors := err.(validator.ValidationErrors)
 
-		log.Fatalf("missing values in %s\n%s", configFile, validationErrors)
+		log.Fatalf("missing values in config\n%s", validationErrors)
 	}
 }

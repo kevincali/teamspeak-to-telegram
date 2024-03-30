@@ -4,9 +4,9 @@ teamSpeak:
         # - foo
         # - bar
     address: # ts.example.com:10011
-    serverquery:
-        username: # foobar
-        password: # hunter2
+    username: # foobar
+    password: # hunter2
+    virtualServerId: # 1
 telegram:
     botToken: # myBotToken
     chatId: # -999
