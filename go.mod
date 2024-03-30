@@ -1,4 +1,4 @@
-module github.com/kevincali/teamspeak-telegram-bot
+module github.com/kevincali/teamspeak-to-telegram
 
 go 1.22
 
