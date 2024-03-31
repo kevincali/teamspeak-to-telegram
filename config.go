@@ -25,7 +25,7 @@ type TeamSpeak struct {
 type Telegram struct {
 	BotToken  string `yaml:"botToken" validate:"required"`
 	ChatId    int64  `yaml:"chatId" validate:"required"`
-	MessageId int    `yaml:"messageId" validate:"required"`
+	MessageId int    `yaml:"messageId"`
 	Separator string `yaml:"separator" validate:"required"`
 	ZeroUsers string `yaml:"zeroUsers" validate:"required"`
 }
