@@ -1,9 +1,13 @@
 COMMIT_HASH := $(shell git --no-pager describe --tags --always --dirty)
 build-image:
-	docker build --tag teamspeak-to-telegram:$(COMMIT_HASH) --tag teamspeak-to-telegram:latest .
+	docker build --tag kevincali/teamspeak-to-telegram:$(COMMIT_HASH) --tag kevincali/teamspeak-to-telegram:latest .
 
 run-image: build-image
-	 docker run --env CONFIG_PATH=config.yaml teamspeak-to-telegram:latest
+	docker run --env CONFIG_PATH=config.yaml teamspeak-to-telegram:latest
+
+push-image:
+	docker push kevincali/teamspeak-to-telegram:$(COMMIT_HASH)
+	docker push kevincali/teamspeak-to-telegram:latest
 
 build:
 	go build .
