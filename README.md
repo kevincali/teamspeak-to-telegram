@@ -1,6 +1,8 @@
 # TeamSpeak to Telegram
 `teamspeak-to-telegram` updates a pinned Telegram message with online TeamSpeak users.
 
+![pinned-message-screenshot](.github/screenshots/pinned-message.png)
+
 ## Configure
 - copy `config.example.yaml` to `config.yaml`
 - open `config.yaml` in your favorite editor
