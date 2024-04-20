@@ -1,7 +1,5 @@
-FROM golang:alpine
+FROM gcr.io/distroless/static:nonroot
 
-COPY . .
+COPY ./teamspeak-to-telegram /bin/teamspeak-to-telegram
 
-RUN go build -o /teamspeak-to-telegram
-
-ENTRYPOINT ["/teamspeak-to-telegram"]
+ENTRYPOINT ["teamspeak-to-telegram"]
