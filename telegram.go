@@ -1,8 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -70,7 +72,7 @@ func (tgConfig *Telegram) updateMessage(bot *tgbotapi.BotAPI, onlineUsers []stri
 	}
 
 	edit := tgbotapi.NewEditMessageText(tgConfig.ChatId, tgConfig.MessageId, content)
-	_, err := bot.Send(edit)
+	message, err := bot.Send(edit)
 	if err != nil {
 		// don't log expected error
 		if strings.Contains(err.Error(), "exactly the same") {
@@ -81,4 +83,42 @@ func (tgConfig *Telegram) updateMessage(bot *tgbotapi.BotAPI, onlineUsers []stri
 	}
 
 	log.Printf("%s updated message with online users: [%s]", tgPrefix, content)
+
+	if tgConfig.UpdateTitle {
+		tgConfig.updateTitle(bot, message.Chat.Title, len(onlineUsers))
+	}
+}
+
+// updateTitle prepends the chat title with the current amount of online users
+func (tgConfig *Telegram) updateTitle(bot *tgbotapi.BotAPI, originalTitle string, userAmount int) {
+	// remove online users from original title
+	titleFields := strings.Fields(originalTitle)
+	if _, err := strconv.Atoi(titleFields[0]); err == nil {
+		originalTitle = strings.Join(titleFields[1:], " ")
+	}
+
+	newTitle := originalTitle
+	if userAmount != 0 {
+		newTitle = fmt.Sprintf("%d %s", userAmount, originalTitle)
+	}
+
+	rename := tgbotapi.NewChatTitle(tgConfig.ChatId, newTitle)
+	_, err := bot.Request(rename)
+	if err != nil {
+		log.Printf("%s unable to update chat title, %s", tgPrefix, err)
+	}
+
+	updates, err := bot.GetUpdates(tgbotapi.UpdateConfig{})
+	if err != nil {
+		log.Printf("%s unable to receive updates, %s", tgPrefix, err)
+	}
+
+	update := updates[len(updates)-1]
+	if update.Message.From.UserName == bot.Self.UserName {
+		deleteChattable := tgbotapi.NewDeleteMessage(tgConfig.ChatId, update.Message.MessageID)
+		_, err = bot.Request(deleteChattable)
+		if err != nil {
+			log.Printf("%s unable to delete chat title update message, %s", tgPrefix, err)
+		}
+	}
 }

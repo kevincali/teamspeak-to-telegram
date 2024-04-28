@@ -13,3 +13,4 @@ telegram:
     messageId: # 808
     separator: " | "
     zeroUsers: ¯\_(ツ)_/¯
+    updateTitle: true # Prepends the chat title with the current amount of online users.
