@@ -11,6 +11,10 @@ import (
 	"github.com/ziutek/telnet"
 )
 
+const (
+	tsPrefix = "[TeamSpeak]\t"
+)
+
 // newTeamSpeakConn initiates the telnet connection to a TeamSpeak server
 func (tsConfig *TeamSpeak) newTeamSpeakConn() *telnet.Conn {
 	conn, err := telnet.DialTimeout("tcp", tsConfig.Address, 5*time.Second)
@@ -33,7 +37,7 @@ func (tsConfig *TeamSpeak) newTeamSpeakConn() *telnet.Conn {
 		log.Fatal(err)
 	}
 
-	log.Println("[TeamSpeak]\t connected to telnet")
+	log.Printf("%s connected to telnet", tsPrefix)
 	return conn
 }
 
@@ -48,7 +52,7 @@ func (tsConfig *TeamSpeak) getOnlineUsers(conn *telnet.Conn) []string {
 	if err != nil {
 		log.Fatal(err)
 	}
-	// log.Println("[TeamSpeak]\t received clientlist")
+	// log.Printf("%s received clientlist", tsPrefix)
 
 	// parse clientlist
 	clients := strings.Split(string(result), "|")
@@ -77,7 +81,7 @@ func (tsConfig *TeamSpeak) getOnlineUsers(conn *telnet.Conn) []string {
 		return cmp.Compare(len(a), len(b))
 	})
 
-	// log.Printf("[TeamSpeak]\t %d connected users", len(users))
+	// log.Printf("%s %d connected users", tsPrefix, len(users))
 
 	return users
 }

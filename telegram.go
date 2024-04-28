@@ -9,6 +9,10 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const (
+	tgPrefix = "[Telegram]\t"
+)
+
 // newTelegramBot creates a Telegram bot using the Telegram API
 func (tgConfig *Telegram) newTelegramBot() *tgbotapi.BotAPI {
 	bot, err := tgbotapi.NewBotAPI(tgConfig.BotToken)
@@ -17,7 +21,7 @@ func (tgConfig *Telegram) newTelegramBot() *tgbotapi.BotAPI {
 	}
 	bot.Debug = false
 
-	log.Printf("[Telegram]\t authorized on account %s", bot.Self.UserName)
+	log.Printf("%s authorized on account %s", tgPrefix, bot.Self.UserName)
 	return bot
 }
 
@@ -34,7 +38,7 @@ func (config *Config) initMessage(bot *tgbotapi.BotAPI, configPath string) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		log.Println("[Telegram]\t sent message")
+		log.Printf("%s sent message", tgPrefix)
 
 		// save messageId to config
 		config.Telegram.MessageId = initMsg.MessageID
@@ -43,7 +47,7 @@ func (config *Config) initMessage(bot *tgbotapi.BotAPI, configPath string) {
 			log.Fatal(err)
 		}
 		os.WriteFile(configPath, yamlData, 0644)
-		log.Println("[Telegram]\t saved messageId to config")
+		log.Printf("%s saved messageId to config", tgPrefix)
 
 		// pin message
 		pinConfig := tgbotapi.PinChatMessageConfig{
@@ -53,7 +57,7 @@ func (config *Config) initMessage(bot *tgbotapi.BotAPI, configPath string) {
 			DisableNotification: false,
 		}
 		bot.Send(pinConfig)
-		log.Println("[Telegram]\t pinned message")
+		log.Printf("%s pinned message", tgPrefix)
 	}
 }
 
@@ -72,9 +76,9 @@ func (tgConfig *Telegram) updateMessage(bot *tgbotapi.BotAPI, onlineUsers []stri
 		if strings.Contains(err.Error(), "exactly the same") {
 			return
 		}
-		log.Printf("[Telegram]\t unable to update message, %s", err)
+		log.Printf("%s unable to update message, %s", tgPrefix, err)
 		return
 	}
 
-	log.Printf("[Telegram]\t updated message with online users: [%s]", content)
+	log.Printf("%s updated message with online users: [%s]", tgPrefix, content)
 }
