@@ -18,7 +18,8 @@
 - create a Telegram bot by contacting [@BotFather](https://t.me/BotFather)
 - copy the bot token to the config
 - contact the bot in a DM or add it to a group
-    - (for groups only) give the bot the admin permission `Pin messages`
+    - (for groups only) give the bot the `Pin messages` admin permission
+    - (for the title update feature) give the bot the `Delete messages` admin permission
 - get the chat ID
     - you could use [@username_to_id_bot](https://t.me/username_to_id_bot) (not an official Telegram bot, use with caution!)
 - copy the chat ID to the config
