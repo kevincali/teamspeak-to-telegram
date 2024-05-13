@@ -102,8 +102,12 @@ func (tgConfig *Telegram) updateTitle(bot *tgbotapi.BotAPI, originalTitle string
 		newTitle = fmt.Sprintf("%d %s", userAmount, originalTitle)
 	}
 
-	rename := tgbotapi.NewChatTitle(tgConfig.ChatId, newTitle)
-	_, err := bot.Request(rename)
+	params := tgbotapi.Params{}
+	params.AddFirstValid("chat_id", tgConfig.ChatId)
+	params.AddBool("disable_notification", true)
+	params["title"] = newTitle
+
+	_, err := bot.MakeRequest("setChatTitle", params)
 	if err != nil {
 		log.Printf("%s unable to update chat title, %s", tgPrefix, err)
 	}
