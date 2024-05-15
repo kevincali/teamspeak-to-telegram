@@ -48,8 +48,12 @@ func (config *Config) initMessage(bot *tgbotapi.BotAPI, configPath string) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		os.WriteFile(configPath, yamlData, 0644)
-		log.Printf("%s saved messageId to config", tgPrefix)
+		err = os.WriteFile(configPath, yamlData, 0644)
+		if err != nil {
+			log.Printf("%s unable to save messageId %d to config, %s", tgPrefix, config.Telegram.MessageId, err)
+		} else {
+			log.Printf("%s saved messageId %d to config", tgPrefix, config.Telegram.MessageId)
+		}
 
 		// pin message
 		pinConfig := tgbotapi.PinChatMessageConfig{
