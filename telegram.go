@@ -35,12 +35,18 @@ func (config *Config) initMessage(bot *tgbotapi.BotAPI, configPath string) {
 		log.Printf("no messageId specified in config")
 
 		// send message
-		initChattable := tgbotapi.NewMessage(config.Telegram.ChatId, "init")
+		initChattable := tgbotapi.MessageConfig{
+			BaseChat: tgbotapi.BaseChat{
+				ChatID:              config.Telegram.ChatId,
+				DisableNotification: true,
+			},
+			Text: "init",
+		}
 		initMsg, err := bot.Send(initChattable)
 		if err != nil {
 			log.Fatal(err)
 		}
-		log.Printf("%s sent message", tgPrefix)
+		log.Printf("%s sent init message", tgPrefix)
 
 		// save messageId to config
 		config.Telegram.MessageId = initMsg.MessageID
@@ -60,7 +66,7 @@ func (config *Config) initMessage(bot *tgbotapi.BotAPI, configPath string) {
 			ChatID:              config.Telegram.ChatId,
 			ChannelUsername:     "",
 			MessageID:           config.Telegram.MessageId,
-			DisableNotification: false,
+			DisableNotification: true,
 		}
 		bot.Send(pinConfig)
 		log.Printf("%s pinned message", tgPrefix)
