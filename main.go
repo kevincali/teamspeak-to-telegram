@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"os"
 	"time"
 )
@@ -9,7 +8,7 @@ import (
 func main() {
 	configPath := os.Getenv("CONFIG_PATH")
 	if configPath == "" {
-		log.Fatal("please specify a CONFIG_PATH envvar")
+		configPath = "config.yaml"
 	}
 	config := loadConfig(configPath)
 	config.validate()
@@ -17,12 +16,23 @@ func main() {
 	telegramBot := config.Telegram.newTelegramBot()
 	config.initMessage(telegramBot, configPath)
 
-	teamspeakConn := config.TeamSpeak.newTeamSpeakConn()
+	var onlineUsers []string
 
-	for {
-		onlineUsers := config.TeamSpeak.getOnlineUsers(teamspeakConn)
-		config.Telegram.updateMessage(telegramBot, onlineUsers)
+	if config.TeamSpeak3 != nil {
+		tsConn := config.TeamSpeak3.newTeamSpeakConn()
+		for {
+			onlineUsers = config.TeamSpeak3.getOnlineUsers(tsConn)
+			config.Telegram.updateMessage(telegramBot, onlineUsers)
+			time.Sleep(time.Duration(config.IntervalSeconds) * time.Second)
+		}
+	}
 
-		time.Sleep(time.Duration(config.IntervalSeconds) * time.Second)
+	if config.TeamSpeak6 != nil {
+		tsConn := config.TeamSpeak6.newTeamSpeakConn()
+		for {
+			onlineUsers = config.TeamSpeak6.getOnlineUsers(tsConn)
+			config.Telegram.updateMessage(telegramBot, onlineUsers)
+			time.Sleep(time.Duration(config.IntervalSeconds) * time.Second)
+		}
 	}
 }

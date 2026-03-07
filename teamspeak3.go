@@ -12,11 +12,14 @@ import (
 )
 
 const (
-	tsPrefix = "[TeamSpeak]\t"
+	ts3Prefix = "[TeamSpeak3]\t"
 )
 
-// newTeamSpeakConn initiates the telnet connection to a TeamSpeak server
-func (tsConfig *TeamSpeak) newTeamSpeakConn() *telnet.Conn {
+type TS3Connection struct {
+	conn *telnet.Conn
+}
+
+func (tsConfig *TeamSpeak3) newTeamSpeakConn() *TS3Connection {
 	conn, err := telnet.DialTimeout("tcp", tsConfig.Address, 5*time.Second)
 	if err != nil {
 		log.Fatal(err)
@@ -27,38 +30,40 @@ func (tsConfig *TeamSpeak) newTeamSpeakConn() *telnet.Conn {
 		log.Fatal(err)
 	}
 
-	conn.Write([]byte(fmt.Sprintf("login %s %s\n", tsConfig.Username, tsConfig.Password)))
+	fmt.Fprintf(conn, "login %s %s\n", tsConfig.Username, tsConfig.Password)
 	if err = conn.SkipUntil("msg=ok"); err != nil {
 		log.Fatal(err)
 	}
 
-	conn.Write([]byte(fmt.Sprintf("use %s\n", tsConfig.VirtualServerId)))
+	fmt.Fprintf(conn, "use %s\n", tsConfig.VirtualServerId)
 	if err = conn.SkipUntil("msg=ok"); err != nil {
 		log.Fatal(err)
 	}
 
-	log.Printf("%s connected to telnet", tsPrefix)
-	return conn
+	log.Printf("%s connected to telnet", ts3Prefix)
+	return &TS3Connection{conn: conn}
 }
 
-// getOnlineUsers checks the online users and filters by favorites if they're defined
-func (tsConfig *TeamSpeak) getOnlineUsers(conn *telnet.Conn) []string {
-	// login, select server and return clientlist
-	conn.Write([]byte("clientlist\n"))
+func (tsConfig *TeamSpeak3) getOnlineUsers(tsConn *TS3Connection) []string {
+	tsConn.conn.Write([]byte("clientlist\n"))
 	time.Sleep(1 * time.Second)
 
 	// get clientlist
-	result, err := conn.ReadUntil("msg=ok")
+	result, err := tsConn.conn.ReadUntil("msg=ok")
 	if err != nil {
 		log.Fatal(err)
 	}
-	// log.Printf("%s received clientlist", tsPrefix)
+	// log.Printf("%s received clientlist", ts3Prefix)
 
 	// parse clientlist
 	clients := strings.Split(string(result), "|")
 	var users []string
 	for _, client := range clients {
 		fields := strings.Fields(client)
+
+		if len(fields) < 5 {
+			continue
+		}
 
 		if clientType := strings.Split(fields[4], "=")[1]; clientType != "0" {
 			continue
@@ -81,7 +86,6 @@ func (tsConfig *TeamSpeak) getOnlineUsers(conn *telnet.Conn) []string {
 		return cmp.Compare(len(a), len(b))
 	})
 
-	// log.Printf("%s %d connected users", tsPrefix, len(users))
-
+	// log.Printf("%s %d connected users", ts3Prefix, len(users))
 	return users
 }

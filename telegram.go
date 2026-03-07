@@ -124,6 +124,7 @@ func (tgConfig *Telegram) updateTitle(bot *tgbotapi.BotAPI, originalTitle string
 		log.Printf("%s failed to update chat title to '%s': %s (chatId=%d)", tgPrefix, newTitle, err, tgConfig.ChatId)
 	}
 
+	// delete 'changed group name' message
 	updates, err := bot.GetUpdates(tgbotapi.UpdateConfig{})
 	if err != nil {
 		log.Printf("%s failed to get updates: %s", tgPrefix, err)
