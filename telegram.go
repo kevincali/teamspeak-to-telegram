@@ -19,7 +19,7 @@ const (
 func (tgConfig *Telegram) newTelegramBot() *tgbotapi.BotAPI {
 	bot, err := tgbotapi.NewBotAPI(tgConfig.BotToken)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("%s failed to create bot: %s (botToken=%s)", tgPrefix, err, tgConfig.BotToken)
 	}
 	bot.Debug = false
 
@@ -44,7 +44,7 @@ func (config *Config) initMessage(bot *tgbotapi.BotAPI, configPath string) {
 		}
 		initMsg, err := bot.Send(initChattable)
 		if err != nil {
-			log.Fatal(err)
+			log.Fatalf("%s failed to send init message: %s (botToken=%s, chatId=%d)", tgPrefix, err, config.Telegram.BotToken, config.Telegram.ChatId)
 		}
 		log.Printf("%s sent init message", tgPrefix)
 
@@ -52,13 +52,11 @@ func (config *Config) initMessage(bot *tgbotapi.BotAPI, configPath string) {
 		config.Telegram.MessageId = initMsg.MessageID
 		yamlData, err := yaml.Marshal(config)
 		if err != nil {
-			log.Fatal(err)
+			log.Fatalf("%s failed to marshal config: %s", tgPrefix, err)
 		}
 		err = os.WriteFile(configPath, yamlData, 0644)
 		if err != nil {
-			log.Printf("%s unable to save messageId %d to config, %s", tgPrefix, config.Telegram.MessageId, err)
-		} else {
-			log.Printf("%s saved messageId %d to config", tgPrefix, config.Telegram.MessageId)
+			log.Fatalf("%s failed to write config to %s: %s", tgPrefix, configPath, err)
 		}
 
 		// pin message
@@ -69,7 +67,11 @@ func (config *Config) initMessage(bot *tgbotapi.BotAPI, configPath string) {
 			DisableNotification: true,
 		}
 		bot.Send(pinConfig)
-		log.Printf("%s pinned message", tgPrefix)
+		if err != nil {
+			log.Printf("%s failed to pin message: %s", tgPrefix, err)
+		} else {
+			log.Printf("%s pinned message", tgPrefix)
+		}
 	}
 }
 
@@ -88,7 +90,7 @@ func (tgConfig *Telegram) updateMessage(bot *tgbotapi.BotAPI, onlineUsers []stri
 		if strings.Contains(err.Error(), "exactly the same") {
 			return
 		}
-		log.Printf("%s unable to update message, %s", tgPrefix, err)
+		log.Printf("%s failed to update message: %s (chatId=%d, messageId=%d)", tgPrefix, err, tgConfig.ChatId, tgConfig.MessageId)
 		return
 	}
 
@@ -119,12 +121,12 @@ func (tgConfig *Telegram) updateTitle(bot *tgbotapi.BotAPI, originalTitle string
 
 	_, err := bot.MakeRequest("setChatTitle", params)
 	if err != nil {
-		log.Printf("%s unable to update chat title, %s", tgPrefix, err)
+		log.Printf("%s failed to update chat title to '%s': %s (chatId=%d)", tgPrefix, newTitle, err, tgConfig.ChatId)
 	}
 
 	updates, err := bot.GetUpdates(tgbotapi.UpdateConfig{})
 	if err != nil {
-		log.Printf("%s unable to receive updates, %s", tgPrefix, err)
+		log.Printf("%s failed to get updates: %s", tgPrefix, err)
 	}
 
 	update := updates[len(updates)-1]
@@ -132,7 +134,7 @@ func (tgConfig *Telegram) updateTitle(bot *tgbotapi.BotAPI, originalTitle string
 		deleteChattable := tgbotapi.NewDeleteMessage(tgConfig.ChatId, update.Message.MessageID)
 		_, err = bot.Request(deleteChattable)
 		if err != nil {
-			log.Printf("%s unable to delete chat title update message, %s", tgPrefix, err)
+			log.Printf("%s failed to delete message: %s (chatId=%d, messageId=%d)", tgPrefix, err, tgConfig.ChatId, update.Message.MessageID)
 		}
 	}
 }
