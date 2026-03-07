@@ -1,34 +1,41 @@
 # TeamSpeak to Telegram
-`teamspeak-to-telegram` updates a pinned Telegram message with online TeamSpeak users.
+Updates a pinned Telegram message with online TeamSpeak users and optionally prepends the user count to the chat title.
+Supports both TeamSpeak3 and TeamSpeak6.
 
 ![pinned-message-screenshot](.github/screenshots/pinned-message.png)
 
-## Configure
-- copy `config.example.yaml` to `config.yaml`
-- open `config.yaml` in your favorite editor
+## Config
+Copy `config.example.yaml` to `config.yaml`.
 
-### TeamSpeak
-- connect to your TeamSpeak server with Server Admin permissions
-- click on `Tools` and then on `ServerQuery Login`
-- enter a username
-- copy the generated password to the config
-- add your virtual server id (usually `1`) to the config
+### TeamSpeak 3 (over Telnet)
+- Connect to your server with `Server Admin` permissions
+- Go to `Tools` → `ServerQuery Login`
+- Copy username, password, and server ID (usually 1) to the config
+
+### TeamSpeak 6 (over HTTP)
+- Enable HTTP query in your server config
+- If you use a query allowlist, add your IP
+- Get your API key:
+  - Option 1: Check server logs on first startup
+  - Option 2: Enable SSH query, ssh into your server, then run `use 1` and `apikeyadd scope=read lifetime=0`
+- Copy the API key to the config
 
 ### Telegram
-- create a Telegram bot by contacting [@BotFather](https://t.me/BotFather)
-- copy the bot token to the config
-- contact the bot in a DM or add it to a group
-    - (for groups only) give the bot the `Pin messages` admin permission
-    - (for the title update feature) give the bot the `Delete messages` admin permission
-- get the chat ID
-    - you could use [@username_to_id_bot](https://t.me/username_to_id_bot) (not an official Telegram bot, use with caution!)
-- copy the chat ID to the config
+- Create a bot via [@BotFather](https://t.me/BotFather)
+- Add the bot to your group
+- Give it following admin permissions:
+  - Pin messages (required)
+  - Change group info (needed for the optional user count title feature)
+  - Delete messages (needed for the optional user count title feature)
+- Get the chat ID
+  you could use [@username_to_id_bot](https://t.me/username_to_id_bot) (not official, use with caution)
+- Copy the bot token and chat ID to config
 
 ## Usage
 ### Run the container
 Images are available on [Docker Hub](https://hub.docker.com/r/kevincali/teamspeak-to-telegram).
-- `docker pull kevincali/teamspeak-to-telegram:latest`
-- `docker run --env CONFIG_PATH=config.yaml kevincali/teamspeak-to-telegram:latest`
+- setup your `config.yaml`
+- `docker run --volume ./config.yaml:/config.yaml --env CONFIG_PATH=/config.yaml kevincali/teamspeak-to-telegram:latest`
 
 ### Build and run the binary
 - clone the repository
