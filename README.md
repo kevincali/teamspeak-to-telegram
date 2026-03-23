@@ -33,9 +33,9 @@ Copy `config.example.yaml` to `config.yaml`.
 
 ## Usage
 ### Run the container
-Images are available on [Docker Hub](https://hub.docker.com/r/kevincali/teamspeak-to-telegram).
+Images are available here on GitHub.
 - setup your `config.yaml`
-- `docker run --volume ./config.yaml:/config.yaml --env CONFIG_PATH=/config.yaml kevincali/teamspeak-to-telegram:latest`
+- `docker run --volume ./config.yaml:/config.yaml --env CONFIG_PATH=/config.yaml ghcr.io/kevincali/teamspeak-to-telegram:latest`
 
 ### Build and run the binary
 - clone the repository
