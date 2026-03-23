@@ -1,17 +1,20 @@
 NAME := $(shell basename $(CURDIR))
 IMAGE=ghcr.io/kevincali/$(NAME)
 COMMIT_HASH := $(shell git rev-parse --short HEAD)
+PLATFORMS=linux/amd64,linux/arm64
 
 build-image:
-	CGO_ENABLED=0 go build .
-	docker build --tag $(IMAGE):$(COMMIT_HASH) --tag $(IMAGE):latest .
+	docker buildx build --load \
+		--tag $(IMAGE):$(COMMIT_HASH) \
+		--tag $(IMAGE):latest .
 
 run-image: build-image
 	docker run --volume ./config.yaml:/config.yaml --env CONFIG_PATH=/config.yaml $(IMAGE):latest
 
 push-image:
-	docker push $(IMAGE):$(COMMIT_HASH)
-	docker push $(IMAGE):latest
+	docker buildx build --platform $(PLATFORMS) --push \
+		--tag $(IMAGE):$(COMMIT_HASH) \
+		--tag $(IMAGE):latest .
 
 build:
 	go build .
