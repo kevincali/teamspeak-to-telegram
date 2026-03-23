@@ -39,6 +39,5 @@ Images are available on [Docker Hub](https://hub.docker.com/r/kevincali/teamspea
 
 ### Build and run the binary
 - clone the repository
-- `make build`
-- `make run`
+- `make build` and run the binary or `make run`
 

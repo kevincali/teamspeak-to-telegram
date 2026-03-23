@@ -7,8 +7,13 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
+
+    permissions:
+      # used to checkout code
+      contents: read
+      # used to push images
+      packages: write
 
     steps:
     - name: checkout code
@@ -25,8 +30,9 @@ jobs:
     - name: login to registry
       uses: docker/login-action@v3
       with:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_TOKEN }}
+        registry: ghcr.io
+        username: ${{ github.repository_owner }}
+        password: ${{ github.token }}
 
     - name: push image
       run: make push-image

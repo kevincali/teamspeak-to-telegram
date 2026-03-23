@@ -1,14 +1,17 @@
-COMMIT_HASH := $(shell git --no-pager describe --tags --always --dirty)
+NAME := $(shell basename $(CURDIR))
+IMAGE=ghcr.io/kevincali/$(NAME)
+COMMIT_HASH := $(shell git rev-parse --short HEAD)
+
 build-image:
 	CGO_ENABLED=0 go build .
-	docker build --tag kevincali/teamspeak-to-telegram:$(COMMIT_HASH) --tag kevincali/teamspeak-to-telegram:latest .
+	docker build --tag $(IMAGE):$(COMMIT_HASH) --tag $(IMAGE):latest .
 
 run-image: build-image
-	docker run --volume ./config.yaml:/config.yaml --env CONFIG_PATH=/config.yaml kevincali/teamspeak-to-telegram:latest
+	docker run --volume ./config.yaml:/config.yaml --env CONFIG_PATH=/config.yaml $(IMAGE):latest
 
 push-image:
-	docker push kevincali/teamspeak-to-telegram:$(COMMIT_HASH)
-	docker push kevincali/teamspeak-to-telegram:latest
+	docker push $(IMAGE):$(COMMIT_HASH)
+	docker push $(IMAGE):latest
 
 build:
 	go build .
