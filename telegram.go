@@ -3,12 +3,10 @@ package main
 import (
 	"fmt"
 	"log"
-	"os"
 	"strconv"
 	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -29,10 +27,10 @@ func (tgConfig *Telegram) newTelegramBot() *tgbotapi.BotAPI {
 
 // initMessage sets a messageId in the config it it's not yet present
 // it does so by sending a message to the chat and pinning it afterwards
-func (config *Config) initMessage(bot *tgbotapi.BotAPI, configPath string) {
+func (config *Config) initMessage(bot *tgbotapi.BotAPI) {
 	// check if we already have a messageId specified
 	if config.Telegram.MessageId == 0 {
-		log.Printf("no messageId specified in config")
+		log.Printf("no message ID in state, creating new message")
 
 		// send message
 		initChattable := tgbotapi.MessageConfig{
@@ -48,16 +46,8 @@ func (config *Config) initMessage(bot *tgbotapi.BotAPI, configPath string) {
 		}
 		log.Printf("%s sent init message", tgPrefix)
 
-		// save messageId to config
 		config.Telegram.MessageId = initMsg.MessageID
-		yamlData, err := yaml.Marshal(config)
-		if err != nil {
-			log.Fatalf("%s failed to marshal config: %s", tgPrefix, err)
-		}
-		err = os.WriteFile(configPath, yamlData, 0644)
-		if err != nil {
-			log.Fatalf("%s failed to write config to %s: %s", tgPrefix, configPath, err)
-		}
+		log.Printf("%s created message with ID %d", tgPrefix, initMsg.MessageID)
 
 		// pin message
 		pinConfig := tgbotapi.PinChatMessageConfig{
@@ -66,11 +56,19 @@ func (config *Config) initMessage(bot *tgbotapi.BotAPI, configPath string) {
 			MessageID:           config.Telegram.MessageId,
 			DisableNotification: true,
 		}
-		bot.Send(pinConfig)
+		_, err = bot.Request(pinConfig)
 		if err != nil {
 			log.Printf("%s failed to pin message: %s", tgPrefix, err)
 		} else {
 			log.Printf("%s pinned message", tgPrefix)
+		}
+
+		// persist message ID to state file
+		err = saveState(stateFile, &State{TelegramMessageId: config.Telegram.MessageId})
+		if err != nil {
+			log.Printf("%s failed to save state: %s (message will be re-created on next restart)", tgPrefix, err)
+		} else {
+			log.Printf("%s saved message ID to state file", tgPrefix)
 		}
 	}
 }

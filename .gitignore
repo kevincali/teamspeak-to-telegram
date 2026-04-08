@@ -1,2 +1,3 @@
-config.yaml
+compose.yaml
+state.json
 teamspeak-to-telegram

@@ -9,18 +9,12 @@ build-image:
 		--tag $(IMAGE):latest .
 
 run-image: build-image
-	docker run --volume ./config.yaml:/config.yaml --env CONFIG_PATH=/config.yaml $(IMAGE):latest
+	docker run $(IMAGE):latest
 
 push-image:
 	docker buildx build --platform $(PLATFORMS) --push \
 		--tag $(IMAGE):$(COMMIT_HASH) \
 		--tag $(IMAGE):latest .
-
-build:
-	go build .
-
-run:
-	go run .
 
 ts3:
 	docker run \

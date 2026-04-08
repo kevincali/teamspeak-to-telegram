@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"net/url"
 	"slices"
+	"strings"
 )
 
 const (
@@ -34,6 +36,11 @@ type TS6Connection struct {
 }
 
 func (tsConfig *TeamSpeak6) newTeamSpeakConn() *TS6Connection {
+	u, err := url.Parse(tsConfig.Address)
+	if err != nil || u.Port() == "" {
+		log.Fatalf("%s TS6_ADDRESS must include a port (e.g. http://host:10080), got: %s", ts6Prefix, tsConfig.Address)
+	}
+
 	log.Printf("%s connecting to %s", ts6Prefix, tsConfig.Address)
 
 	return &TS6Connection{
@@ -61,6 +68,12 @@ func (tsConfig *TeamSpeak6) getOnlineUsers(tsConn *TS6Connection) []string {
 
 	if resp.StatusCode != http.StatusOK {
 		log.Printf("%s unexpected status code: %d", ts6Prefix, resp.StatusCode)
+		return nil
+	}
+
+	contentType := resp.Header.Get("Content-Type")
+	if !strings.Contains(contentType, "application/json") {
+		log.Fatalf("%s unexpected content type: %s (check TS6_ADDRESS includes the query port, e.g. :10080)", ts6Prefix, contentType)
 		return nil
 	}
 

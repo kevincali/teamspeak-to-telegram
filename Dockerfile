@@ -14,6 +14,8 @@ RUN --mount=type=cache,target=/go/pkg/mod \
 
 FROM gcr.io/distroless/static:nonroot
 
+WORKDIR /home/nonroot
+
 COPY --from=builder /bin/teamspeak-to-telegram /bin/teamspeak-to-telegram
 
 ENTRYPOINT ["teamspeak-to-telegram"]
