@@ -1,11 +1,15 @@
 package main
 
 import (
+	"context"
 	"log"
 	"time"
 )
 
 func main() {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	config := loadConfig()
 	config.validate()
 
@@ -16,11 +20,11 @@ func main() {
 	}
 	if state != nil && state.TelegramMessageId != 0 {
 		config.Telegram.MessageId = state.TelegramMessageId
-		log.Printf("loaded message ID %d from state file", state.TelegramMessageId)
+		log.Printf("%s loaded message ID %d from state file", tgPrefix, state.TelegramMessageId)
 	}
 
 	telegramBot := config.Telegram.newTelegramBot()
-	config.initMessage(telegramBot)
+	config.initMessage(ctx, telegramBot)
 
 	var onlineUsers []string
 
@@ -28,7 +32,7 @@ func main() {
 		tsConn := config.TeamSpeak3.newTeamSpeakConn()
 		for {
 			onlineUsers = config.TeamSpeak3.getOnlineUsers(tsConn)
-			config.Telegram.updateMessage(telegramBot, onlineUsers)
+			config.Telegram.updateMessage(ctx, telegramBot, onlineUsers)
 			time.Sleep(time.Duration(config.IntervalSeconds) * time.Second)
 		}
 	}
@@ -37,7 +41,7 @@ func main() {
 		tsConn := config.TeamSpeak6.newTeamSpeakConn()
 		for {
 			onlineUsers = config.TeamSpeak6.getOnlineUsers(tsConn)
-			config.Telegram.updateMessage(telegramBot, onlineUsers)
+			config.Telegram.updateMessage(ctx, telegramBot, onlineUsers)
 			time.Sleep(time.Duration(config.IntervalSeconds) * time.Second)
 		}
 	}

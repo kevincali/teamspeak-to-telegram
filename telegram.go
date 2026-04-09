@@ -1,12 +1,12 @@
 package main
 
 import (
-	"fmt"
+	"context"
 	"log"
-	"strconv"
 	"strings"
+	"time"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/go-telegram/bot"
 )
 
 const (
@@ -14,49 +14,52 @@ const (
 )
 
 // newTelegramBot creates a Telegram bot using the Telegram API
-func (tgConfig *Telegram) newTelegramBot() *tgbotapi.BotAPI {
-	bot, err := tgbotapi.NewBotAPI(tgConfig.BotToken)
+func (tgConfig *Telegram) newTelegramBot() *bot.Bot {
+	telegramBot, err := bot.New(tgConfig.BotToken)
 	if err != nil {
 		log.Fatalf("%s failed to create bot: %s (botToken=%s)", tgPrefix, err, tgConfig.BotToken)
 	}
-	bot.Debug = false
 
-	log.Printf("%s authorized on account %s", tgPrefix, bot.Self.UserName)
-	return bot
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	self, err := telegramBot.GetMe(ctx)
+	if err != nil {
+		log.Printf("%s authorized bot with ID %d (failed to fetch username: %s)", tgPrefix, telegramBot.ID(), err)
+	} else {
+		log.Printf("%s authorized on account %s", tgPrefix, self.Username)
+	}
+
+	return telegramBot
 }
 
 // initMessage sets a messageId in the config it it's not yet present
 // it does so by sending a message to the chat and pinning it afterwards
-func (config *Config) initMessage(bot *tgbotapi.BotAPI) {
+func (config *Config) initMessage(ctx context.Context, telegramBot *bot.Bot) {
 	// check if we already have a messageId specified
 	if config.Telegram.MessageId == 0 {
-		log.Printf("no message ID in state, creating new message")
+		log.Printf("%s no message ID in state, creating new message", tgPrefix)
 
 		// send message
-		initChattable := tgbotapi.MessageConfig{
-			BaseChat: tgbotapi.BaseChat{
-				ChatID:              config.Telegram.ChatId,
-				DisableNotification: true,
-			},
-			Text: "init",
-		}
-		initMsg, err := bot.Send(initChattable)
+		initMsg, err := telegramBot.SendMessage(ctx, &bot.SendMessageParams{
+			ChatID:              config.Telegram.ChatId,
+			DisableNotification: true,
+			Text:                "init",
+		})
 		if err != nil {
 			log.Fatalf("%s failed to send init message: %s (botToken=%s, chatId=%d)", tgPrefix, err, config.Telegram.BotToken, config.Telegram.ChatId)
 		}
 		log.Printf("%s sent init message", tgPrefix)
 
-		config.Telegram.MessageId = initMsg.MessageID
-		log.Printf("%s created message with ID %d", tgPrefix, initMsg.MessageID)
+		config.Telegram.MessageId = initMsg.ID
+		log.Printf("%s created message with ID %d", tgPrefix, initMsg.ID)
 
 		// pin message
-		pinConfig := tgbotapi.PinChatMessageConfig{
+		_, err = telegramBot.PinChatMessage(ctx, &bot.PinChatMessageParams{
 			ChatID:              config.Telegram.ChatId,
-			ChannelUsername:     "",
 			MessageID:           config.Telegram.MessageId,
 			DisableNotification: true,
-		}
-		_, err = bot.Request(pinConfig)
+		})
 		if err != nil {
 			log.Printf("%s failed to pin message: %s", tgPrefix, err)
 		} else {
@@ -74,18 +77,21 @@ func (config *Config) initMessage(bot *tgbotapi.BotAPI) {
 }
 
 // updateMessage edits the message to display the currently online users
-func (tgConfig *Telegram) updateMessage(bot *tgbotapi.BotAPI, onlineUsers []string) {
+func (tgConfig *Telegram) updateMessage(ctx context.Context, telegramBot *bot.Bot, onlineUsers []string) {
 	content := strings.Join(onlineUsers, tgConfig.Separator)
 
 	if len(onlineUsers) == 0 {
 		content = tgConfig.ZeroUsers
 	}
 
-	edit := tgbotapi.NewEditMessageText(tgConfig.ChatId, tgConfig.MessageId, content)
-	message, err := bot.Send(edit)
+	_, err := telegramBot.EditMessageText(ctx, &bot.EditMessageTextParams{
+		ChatID:    tgConfig.ChatId,
+		MessageID: tgConfig.MessageId,
+		Text:      content,
+	})
 	if err != nil {
 		// don't log expected error
-		if strings.Contains(err.Error(), "exactly the same") {
+		if strings.Contains(err.Error(), "message is not modified") || strings.Contains(err.Error(), "exactly the same") {
 			return
 		}
 		log.Printf("%s failed to update message: %s (chatId=%d, messageId=%d)", tgPrefix, err, tgConfig.ChatId, tgConfig.MessageId)
@@ -93,47 +99,4 @@ func (tgConfig *Telegram) updateMessage(bot *tgbotapi.BotAPI, onlineUsers []stri
 	}
 
 	log.Printf("%s updated message with online users: [%s]", tgPrefix, content)
-
-	if tgConfig.UpdateTitle {
-		tgConfig.updateTitle(bot, message.Chat.Title, len(onlineUsers))
-	}
-}
-
-// updateTitle prepends the chat title with the current amount of online users
-func (tgConfig *Telegram) updateTitle(bot *tgbotapi.BotAPI, originalTitle string, userAmount int) {
-	// remove online users from original title
-	titleFields := strings.Fields(originalTitle)
-	if _, err := strconv.Atoi(titleFields[0]); err == nil {
-		originalTitle = strings.Join(titleFields[1:], " ")
-	}
-
-	newTitle := originalTitle
-	if userAmount != 0 {
-		newTitle = fmt.Sprintf("%d %s", userAmount, originalTitle)
-	}
-
-	params := tgbotapi.Params{}
-	params.AddFirstValid("chat_id", tgConfig.ChatId)
-	params.AddBool("disable_notification", true)
-	params["title"] = newTitle
-
-	_, err := bot.MakeRequest("setChatTitle", params)
-	if err != nil {
-		log.Printf("%s failed to update chat title to '%s': %s (chatId=%d)", tgPrefix, newTitle, err, tgConfig.ChatId)
-	}
-
-	// delete 'changed group name' message
-	updates, err := bot.GetUpdates(tgbotapi.UpdateConfig{})
-	if err != nil {
-		log.Printf("%s failed to get updates: %s", tgPrefix, err)
-	}
-
-	update := updates[len(updates)-1]
-	if update.Message.From.UserName == bot.Self.UserName {
-		deleteChattable := tgbotapi.NewDeleteMessage(tgConfig.ChatId, update.Message.MessageID)
-		_, err = bot.Request(deleteChattable)
-		if err != nil {
-			log.Printf("%s failed to delete message: %s (chatId=%d, messageId=%d)", tgPrefix, err, tgConfig.ChatId, update.Message.MessageID)
-		}
-	}
 }

@@ -1,6 +1,6 @@
 # TeamSpeak to Telegram
-Updates a pinned Telegram message with online TeamSpeak users and optionally prepends the user count to the chat title for groups.
-Supports both TeamSpeak6 and TeamSpeak3.
+Updates a pinned Telegram message with online TeamSpeak users.
+Supports TeamSpeak6 and TeamSpeak3.
 
 ![pinned-message-screenshot](.github/screenshots/pinned-message.png)
 
@@ -43,21 +43,26 @@ Configuration is done via environment variables. Use either TS3 or TS6, not both
 | `TELEGRAM_CHAT_ID`            | Telegram chat ID                                       | Yes                | -            |
 | `TELEGRAM_SEPARATOR`          | Separator between usernames                            | No                 | ` \| `       |
 | `TELEGRAM_ZERO_USERS`         | Text when no users are online                          | No                 | `¯\_(ツ)_/¯` |
-| `TELEGRAM_UPDATE_TITLE`       | Prepend online user count to chat title (only groups)  | No                 | `false`      |
 
 The message ID is auto-saved to `state.json` and reused on restart.
 
 ### Getting your credentials
 
-**TeamSpeak 6**
-- Get your API key from the server logs on first startup, or via SSH query: `use 1` then `apikeyadd scope=read lifetime=0`
+#### TeamSpeak 6
+- Get your API key from the server logs on first startup
+  - alternatively you can create a new one via WebQuery:
+    - `ssh serveradmin@<SERVER_IP> -p 10022`
+    - `use 1`
+    - `apikeyadd scope=read lifetime=0`
 - If you use a query allowlist, add your IP
 
-**TeamSpeak 3**
+#### TeamSpeak 3
 - Connect with Server Admin permissions
 - Go to `Tools` -> `ServerQuery Login` to get the username/password
 
-**Telegram**
-- Create a bot via [@BotFather](https://t.me/BotFather) and add it to your group
-- Grant it admin permissions: *Pin messages* (required), *Change group info* and *Delete messages* (only needed for `TELEGRAM_UPDATE_TITLE`)
+#### Telegram
+- Create a bot via [@BotFather](https://t.me/BotFather)
+- Add it to your group
+- Promote it to Admin
+- Give it the `Pin messages` permission (the others can be disabled)
 - Get the chat ID with [@username_to_id_bot](https://t.me/username_to_id_bot) (not official, use with caution)

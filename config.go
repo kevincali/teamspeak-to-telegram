@@ -31,12 +31,11 @@ type TeamSpeak6 struct {
 }
 
 type Telegram struct {
-	BotToken    string `validate:"required"`
-	ChatId      int64  `validate:"required"`
-	MessageId   int
-	Separator   string `validate:"required"`
-	ZeroUsers   string `validate:"required"`
-	UpdateTitle bool
+	BotToken  string `validate:"required"`
+	ChatId    int64  `validate:"required"`
+	MessageId int
+	Separator string `validate:"required"`
+	ZeroUsers string `validate:"required"`
 }
 
 func loadConfig() Config {
@@ -96,10 +95,6 @@ func loadConfig() Config {
 		config.Telegram.ZeroUsers = v
 	}
 
-	if v := os.Getenv("TELEGRAM_UPDATE_TITLE"); v == "true" || v == "1" {
-		config.Telegram.UpdateTitle = true
-	}
-
 	return config
 }
 
@@ -148,9 +143,5 @@ func (config *Config) validate() {
 	if err := validate.Struct(config); err != nil {
 		validationErrors := err.(validator.ValidationErrors)
 		log.Fatalf("missing required environment variables\n%s", validationErrors)
-	}
-
-	if config.Telegram.UpdateTitle && config.Telegram.ChatId > 0 {
-		log.Fatalf("TELEGRAM_UPDATE_TITLE only works in group chats")
 	}
 }
