@@ -3,15 +3,12 @@ package main
 import (
 	"cmp"
 	"encoding/json"
-	"log"
+	"log/slog"
 	"net/http"
 	"net/url"
+	"os"
 	"slices"
 	"strings"
-)
-
-const (
-	ts6Prefix = "[TeamSpeak6]\t"
 )
 
 type TS6Client struct {
@@ -33,27 +30,30 @@ type TS6Connection struct {
 	address string
 	apiKey  string
 	client  *http.Client
+	logger  *slog.Logger
 }
 
-func (tsConfig *TeamSpeak6) newTeamSpeakConn() *TS6Connection {
+func (tsConfig *TeamSpeak6) newTeamSpeakConn(logger *slog.Logger) *TS6Connection {
 	u, err := url.Parse(tsConfig.Address)
 	if err != nil || u.Port() == "" {
-		log.Fatalf("%s TS6_ADDRESS must include a port (e.g. http://host:10080), got: %s", ts6Prefix, tsConfig.Address)
+		logger.Error("address must include a port (e.g. http://host:10080)", "address", tsConfig.Address)
+		os.Exit(1)
 	}
 
-	log.Printf("%s connecting to %s", ts6Prefix, tsConfig.Address)
+	logger.Info("connecting", "address", tsConfig.Address)
 
 	return &TS6Connection{
 		address: tsConfig.Address,
 		apiKey:  tsConfig.ApiKey,
 		client:  &http.Client{},
+		logger:  logger,
 	}
 }
 
 func (tsConfig *TeamSpeak6) getOnlineUsers(tsConn *TS6Connection) []string {
 	req, err := http.NewRequest("GET", tsConn.address+"/1/clientlist", nil)
 	if err != nil {
-		log.Printf("%s error creating request: %s", ts6Prefix, err)
+		tsConn.logger.Error("failed to create request", "error", err)
 		return nil
 	}
 
@@ -61,30 +61,30 @@ func (tsConfig *TeamSpeak6) getOnlineUsers(tsConn *TS6Connection) []string {
 
 	resp, err := tsConn.client.Do(req)
 	if err != nil {
-		log.Printf("%s error making request: %s", ts6Prefix, err)
+		tsConn.logger.Error("failed to make request", "error", err)
 		return nil
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		log.Printf("%s unexpected status code: %d", ts6Prefix, resp.StatusCode)
+		tsConn.logger.Error("unexpected status code", "status", resp.StatusCode)
 		return nil
 	}
 
 	contentType := resp.Header.Get("Content-Type")
 	if !strings.Contains(contentType, "application/json") {
-		log.Fatalf("%s unexpected content type: %s (check TS6_ADDRESS includes the query port, e.g. :10080)", ts6Prefix, contentType)
-		return nil
+		tsConn.logger.Error("unexpected content type, check address includes the query port (e.g. :10080)", "content_type", contentType)
+		os.Exit(1)
 	}
 
 	var result TS6ResponseBody
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		log.Printf("%s error decoding response: %s", ts6Prefix, err)
+		tsConn.logger.Error("failed to decode response", "error", err)
 		return nil
 	}
 
 	if result.Status.Code != 0 {
-		log.Printf("%s API error: %s", ts6Prefix, result.Status.Message)
+		tsConn.logger.Error("API error", "code", result.Status.Code, "message", result.Status.Message)
 		return nil
 	}
 
@@ -108,6 +108,5 @@ func (tsConfig *TeamSpeak6) getOnlineUsers(tsConn *TS6Connection) []string {
 		return cmp.Compare(len(a), len(b))
 	})
 
-	// log.Printf("%s %d connected users", ts6Prefix, len(users))
 	return users
 }

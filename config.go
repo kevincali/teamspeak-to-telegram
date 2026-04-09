@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log"
+	"log/slog"
 	"os"
 	"strconv"
 	"strings"
@@ -51,7 +51,8 @@ func loadConfig() Config {
 	if v := os.Getenv("TS_POLLING_INTERVAL_SECONDS"); v != "" {
 		n, err := strconv.Atoi(v)
 		if err != nil {
-			log.Fatalf("invalid TS_POLLING_INTERVAL_SECONDS: %s", err)
+			slog.Error("invalid TS_POLLING_INTERVAL_SECONDS", "error", err)
+			os.Exit(1)
 		}
 		config.IntervalSeconds = n
 	}
@@ -82,7 +83,8 @@ func loadConfig() Config {
 	if v := os.Getenv("TELEGRAM_CHAT_ID"); v != "" {
 		n, err := strconv.ParseInt(v, 10, 64)
 		if err != nil {
-			log.Fatalf("invalid TELEGRAM_CHAT_ID: %s", err)
+			slog.Error("invalid TELEGRAM_CHAT_ID", "error", err)
+			os.Exit(1)
 		}
 		config.Telegram.ChatId = n
 	}
@@ -119,29 +121,34 @@ func (config *Config) validate() {
 	hasTS6 := config.TeamSpeak6 != nil
 
 	if hasTS3 && hasTS6 {
-		log.Fatal("cannot use both teamSpeak3 and teamSpeak6 at the same time, please use only one")
+		slog.Error("cannot use both teamspeak3 and teamspeak6 at the same time, please use only one")
+		os.Exit(1)
 	}
 
 	if !hasTS3 && !hasTS6 {
-		log.Fatal("please set either TS3_ADDRESS or TS6_ADDRESS")
+		slog.Error("please set either TS3_ADDRESS or TS6_ADDRESS")
+		os.Exit(1)
 	}
 
 	if hasTS3 {
 		if err := validate.Struct(config.TeamSpeak3); err != nil {
 			validationErrors := err.(validator.ValidationErrors)
-			log.Fatalf("missing required TS3_* environment variables\n%s", validationErrors)
+			slog.Error("missing required TS3_* environment variables", "scope", "TeamSpeak3", "errors", validationErrors.Error())
+			os.Exit(1)
 		}
 	}
 
 	if hasTS6 {
 		if err := validate.Struct(config.TeamSpeak6); err != nil {
 			validationErrors := err.(validator.ValidationErrors)
-			log.Fatalf("missing required TS6_* environment variables\n%s", validationErrors)
+			slog.Error("missing required TS6_* environment variables", "scope", "TeamSpeak6", "errors", validationErrors.Error())
+			os.Exit(1)
 		}
 	}
 
 	if err := validate.Struct(config); err != nil {
 		validationErrors := err.(validator.ValidationErrors)
-		log.Fatalf("missing required environment variables\n%s", validationErrors)
+		slog.Error("missing required environment variables", "errors", validationErrors.Error())
+		os.Exit(1)
 	}
 }

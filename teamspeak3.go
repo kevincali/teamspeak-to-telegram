@@ -3,7 +3,8 @@ package main
 import (
 	"cmp"
 	"fmt"
-	"log"
+	"log/slog"
+	"os"
 	"slices"
 	"strings"
 	"time"
@@ -11,37 +12,38 @@ import (
 	"github.com/ziutek/telnet"
 )
 
-const (
-	ts3Prefix = "[TeamSpeak3]\t"
-)
-
 type TS3Connection struct {
-	conn *telnet.Conn
+	conn   *telnet.Conn
+	logger *slog.Logger
 }
 
-func (tsConfig *TeamSpeak3) newTeamSpeakConn() *TS3Connection {
+func (tsConfig *TeamSpeak3) newTeamSpeakConn(logger *slog.Logger) *TS3Connection {
 	conn, err := telnet.DialTimeout("tcp", tsConfig.Address, 5*time.Second)
 	if err != nil {
-		log.Fatal(err)
+		logger.Error("failed to connect", "address", tsConfig.Address, "error", err)
+		os.Exit(1)
 	}
 
 	// skip until banner end is reached
 	if err = conn.SkipUntil("command."); err != nil {
-		log.Fatal(err)
+		logger.Error("failed to read banner", "error", err)
+		os.Exit(1)
 	}
 
 	fmt.Fprintf(conn, "login %s %s\n", tsConfig.Username, tsConfig.Password)
 	if err = conn.SkipUntil("msg=ok"); err != nil {
-		log.Fatal(err)
+		logger.Error("failed to authenticate", "error", err)
+		os.Exit(1)
 	}
 
 	fmt.Fprintf(conn, "use %s\n", tsConfig.VirtualServerId)
 	if err = conn.SkipUntil("msg=ok"); err != nil {
-		log.Fatal(err)
+		logger.Error("failed to select virtual server", "virtual_server_id", tsConfig.VirtualServerId, "error", err)
+		os.Exit(1)
 	}
 
-	log.Printf("%s connected to telnet", ts3Prefix)
-	return &TS3Connection{conn: conn}
+	logger.Info("connected", "address", tsConfig.Address)
+	return &TS3Connection{conn: conn, logger: logger}
 }
 
 func (tsConfig *TeamSpeak3) getOnlineUsers(tsConn *TS3Connection) []string {
@@ -51,9 +53,9 @@ func (tsConfig *TeamSpeak3) getOnlineUsers(tsConn *TS3Connection) []string {
 	// get clientlist
 	result, err := tsConn.conn.ReadUntil("msg=ok")
 	if err != nil {
-		log.Fatal(err)
+		tsConn.logger.Error("failed to read client list", "error", err)
+		os.Exit(1)
 	}
-	// log.Printf("%s received clientlist", ts3Prefix)
 
 	// parse clientlist
 	clients := strings.Split(string(result), "|")
@@ -86,6 +88,5 @@ func (tsConfig *TeamSpeak3) getOnlineUsers(tsConn *TS3Connection) []string {
 		return cmp.Compare(len(a), len(b))
 	})
 
-	// log.Printf("%s %d connected users", ts3Prefix, len(users))
 	return users
 }
